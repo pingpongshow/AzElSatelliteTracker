@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Satellite Tracker</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo-container">
+                    <span class="logo">📡</span>
+                </div>
+                <div class="header-title">
+                    <h1>Satellite Tracker</h1>
+                    <span class="subtitle">Az/El Antenna Controller</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="connection-badge" id="connection-badge">
+                    <span class="status-dot" id="connection-status"></span>
+                    <span id="connection-text">Connecting...</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Left Column - Position & Control -->
+            <div class="column column-left">
+                <!-- Position Display -->
+                <section class="card position-card">
+                    <div class="card-header">
+                        <h2><span class="icon">🎯</span> Antenna Position</h2>
+                    </div>
+                    <div class="position-display">
+                        <div class="position-item">
+                            <span class="position-label">Azimuth</span>
+                            <div class="position-value-container">
+                                <span class="position-value" id="azimuth">---</span>
+                                <span class="position-unit">°</span>
+                            </div>
+                        </div>
+                        <div class="position-divider"></div>
+                        <div class="position-item">
+                            <span class="position-label">Elevation</span>
+                            <div class="position-value-container">
+                                <span class="position-value" id="elevation">---</span>
+                                <span class="position-unit">°</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="position-target" id="target-display" style="display:none;">
+                        <span class="target-label">Target:</span>
+                        <span id="target-az">---</span>° / <span id="target-el">---</span>°
+                    </div>
+                    <div class="motion-indicator" id="motion-indicator" style="display:none;">
+                        <span class="spinner"></span>
+                        <span>Moving...</span>
+                    </div>
+                </section>
+
+                <!-- Compass Display -->
+                <section class="card compass-card">
+                    <div class="card-header">
+                        <h2><span class="icon">🧭</span> Compass View</h2>
+                    </div>
+                    <div class="compass-container">
+                        <svg class="compass" viewBox="0 0 200 200">
+                            <defs>
+                                <linearGradient id="compassGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#1e3a5f;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#0d1b2a;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <!-- Background -->
+                            <circle cx="100" cy="100" r="95" fill="url(#compassGrad)"/>
+                            <!-- Compass ring -->
+                            <circle cx="100" cy="100" r="90" class="compass-ring"/>
+                            <!-- Cardinal directions -->
+                            <text x="100" y="22" class="compass-label cardinal">N</text>
+                            <text x="178" y="105" class="compass-label cardinal">E</text>
+                            <text x="100" y="188" class="compass-label cardinal">S</text>
+                            <text x="22" y="105" class="compass-label cardinal">W</text>
+                            <!-- Tick marks -->
+                            <g class="compass-ticks" id="compass-ticks"></g>
+                            <!-- Antenna pointer -->
+                            <g id="antenna-pointer" transform="rotate(0, 100, 100)">
+                                <line x1="100" y1="100" x2="100" y2="30" class="pointer-line"/>
+                                <polygon points="100,20 93,40 107,40" class="pointer-head"/>
+                                <circle cx="100" cy="100" r="8" class="pointer-center"/>
+                            </g>
+                            <!-- Satellite marker -->
+                            <g id="sat-marker-group" style="display:none;">
+                                <circle id="sat-marker" cx="100" cy="100" r="8" class="sat-marker"/>
+                                <circle id="sat-marker-pulse" cx="100" cy="100" r="8" class="sat-marker-pulse"/>
+                            </g>
+                        </svg>
+                        <div class="elevation-bar">
+                            <div class="elevation-track">
+                                <div class="elevation-fill" id="elevation-fill"></div>
+                            </div>
+                            <div class="elevation-labels">
+                                <span>90°</span>
+                                <span>45°</span>
+                                <span>0°</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Manual Control -->
+                <section class="card control-card">
+                    <div class="card-header">
+                        <h2><span class="icon">🎮</span> Manual Control</h2>
+                    </div>
+                    <div class="control-grid">
+                        <div class="control-row">
+                            <button class="control-btn" onclick="jogUp()" title="Increase Elevation">
+                                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+                            </button>
+                        </div>
+                        <div class="control-row">
+                            <button class="control-btn" onclick="jogLeft()" title="Decrease Azimuth">
+                                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6z"/></svg>
+                            </button>
+                            <button class="control-btn stop-btn" onclick="stopMotion()" title="Emergency Stop">STOP</button>
+                            <button class="control-btn" onclick="jogRight()" title="Increase Azimuth">
+                                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+                            </button>
+                        </div>
+                        <div class="control-row">
+                            <button class="control-btn" onclick="jogDown()" title="Decrease Elevation">
+                                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="goto-section">
+                        <h3>Go To Position</h3>
+                        <div class="goto-inputs">
+                            <div class="input-field">
+                                <label for="goto-az">Az</label>
+                                <input type="number" id="goto-az" min="-180" max="540" step="0.1" value="0">
+                            </div>
+                            <div class="input-field">
+                                <label for="goto-el">El</label>
+                                <input type="number" id="goto-el" min="0" max="90" step="0.1" value="45">
+                            </div>
+                            <button class="btn btn-primary" onclick="goToPosition()">GO</button>
+                        </div>
+                    </div>
+                    <div class="quick-actions">
+                        <button class="btn btn-secondary" onclick="parkAntenna()">
+                            <span class="btn-icon">🅿️</span> Park
+                        </button>
+                        <button class="btn btn-secondary" onclick="homeAntenna()">
+                            <span class="btn-icon">🏠</span> Home
+                        </button>
+                        <button class="btn btn-secondary" onclick="setHome()">
+                            <span class="btn-icon">📍</span> Set Home
+                        </button>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Center Column - Tracking -->
+            <div class="column column-center">
+                <!-- Satellite Tracking -->
+                <section class="card tracking-card">
+                    <div class="card-header">
+                        <h2><span class="icon">🛰️</span> Satellite Tracking</h2>
+                        <div class="tracking-badge" id="tracking-badge" style="display:none;">
+                            <span class="pulse-dot"></span>
+                            <span>TRACKING</span>
+                        </div>
+                    </div>
+                    <div class="tracking-status" id="tracking-status">
+                        <div class="status-row">
+                            <span class="status-label">Mode:</span>
+                            <span class="status-value" id="tracking-mode">Idle</span>
+                        </div>
+                    </div>
+                    <div class="satellite-info" id="satellite-info" style="display:none;">
+                        <div class="sat-header">
+                            <span class="sat-name" id="sat-name">---</span>
+                            <span class="sat-visibility" id="sat-visibility">Below Horizon</span>
+                        </div>
+                        <div class="sat-details">
+                            <div class="sat-detail">
+                                <span class="detail-label">Azimuth</span>
+                                <span class="detail-value" id="sat-az">---</span>°
+                            </div>
+                            <div class="sat-detail">
+                                <span class="detail-label">Elevation</span>
+                                <span class="detail-value" id="sat-el">---</span>°
+                            </div>
+                            <div class="sat-detail">
+                                <span class="detail-label">Range</span>
+                                <span class="detail-value" id="sat-range">---</span> km
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tracking-controls">
+                        <select id="satellite-select" class="select-styled">
+                            <option value="">Select Satellite...</option>
+                        </select>
+                        <div class="tracking-buttons">
+                            <button class="btn btn-success" onclick="startTracking()" id="track-btn">▶ Track</button>
+                            <button class="btn btn-danger" onclick="stopTracking()" id="stop-track-btn" style="display:none;">⏹ Stop</button>
+                        </div>
+                    </div>
+                    <div class="tle-section">
+                        <h3>Load TLE Data</h3>
+                        <div class="tle-inputs">
+                            <input type="text" id="tle-name" class="input-styled" placeholder="Satellite Name">
+                            <textarea id="tle-line1" class="input-styled" placeholder="TLE Line 1" rows="2"></textarea>
+                            <textarea id="tle-line2" class="input-styled" placeholder="TLE Line 2" rows="2"></textarea>
+                        </div>
+                        <div class="tle-buttons">
+                            <button class="btn btn-secondary" onclick="loadTLE()">Load TLE</button>
+                            <button class="btn btn-secondary" onclick="fetchTLE()">Fetch from Celestrak</button>
+                        </div>
+                    </div>
+                    <div class="next-pass" id="next-pass" style="display:none;">
+                        <h3>Next Pass</h3>
+                        <div id="pass-info" class="pass-info"></div>
+                    </div>
+                </section>
+
+                <!-- Polar Plot & Pass Prediction -->
+                <section class="card polar-card">
+                    <div class="card-header">
+                        <h2><span class="icon">📊</span> Pass Prediction</h2>
+                    </div>
+                    <div class="polar-container">
+                        <canvas id="polar-plot" width="280" height="280"></canvas>
+                    </div>
+                    <div class="pass-list-container">
+                        <h3>Upcoming Passes</h3>
+                        <div id="pass-list" class="pass-list">
+                            <p class="no-data">Load a satellite to see passes</p>
+                        </div>
+                        <button class="btn btn-secondary btn-full" onclick="fetchPasses()">🔄 Refresh Passes</button>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Right Column - Status & Settings -->
+            <div class="column column-right">
+                <!-- GPS Status -->
+                <section class="card gps-card">
+                    <div class="card-header">
+                        <h2><span class="icon">📍</span> GPS Status</h2>
+                    </div>
+                    <div class="gps-grid">
+                        <div class="gps-item">
+                            <span class="gps-icon" id="gps-status-icon">⏳</span>
+                            <div class="gps-data">
+                                <span class="gps-label">Status</span>
+                                <span class="gps-value" id="gps-status">No Fix</span>
+                            </div>
+                        </div>
+                        <div class="gps-item">
+                            <span class="gps-icon">🌐</span>
+                            <div class="gps-data">
+                                <span class="gps-label">Latitude</span>
+                                <span class="gps-value" id="gps-lat">---</span>
+                            </div>
+                        </div>
+                        <div class="gps-item">
+                            <span class="gps-icon">🌐</span>
+                            <div class="gps-data">
+                                <span class="gps-label">Longitude</span>
+                                <span class="gps-value" id="gps-lon">---</span>
+                            </div>
+                        </div>
+                        <div class="gps-item">
+                            <span class="gps-icon">⬆️</span>
+                            <div class="gps-data">
+                                <span class="gps-label">Altitude</span>
+                                <span class="gps-value" id="gps-alt">---</span>
+                            </div>
+                        </div>
+                        <div class="gps-item">
+                            <span class="gps-icon">📶</span>
+                            <div class="gps-data">
+                                <span class="gps-label">Satellites</span>
+                                <span class="gps-value" id="gps-sats">---</span>
+                            </div>
+                        </div>
+                        <div class="gps-item">
+                            <span class="gps-icon">🕐</span>
+                            <div class="gps-data">
+                                <span class="gps-label">UTC Time</span>
+                                <span class="gps-value gps-time" id="gps-time">---</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="manual-location">
+                        <h3>Manual Location</h3>
+                        <div class="location-inputs">
+                            <div class="input-field">
+                                <label>Lat</label>
+                                <input type="number" id="manual-lat" step="0.000001">
+                            </div>
+                            <div class="input-field">
+                                <label>Lon</label>
+                                <input type="number" id="manual-lon" step="0.000001">
+                            </div>
+                            <div class="input-field">
+                                <label>Alt</label>
+                                <input type="number" id="manual-alt" step="0.1">
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary btn-full" onclick="setManualLocation()">Set Manual Location</button>
+                    </div>
+                </section>
+
+                <!-- Calibration -->
+                <section class="card calibration-card">
+                    <div class="card-header">
+                        <h2><span class="icon">🔧</span> Calibration</h2>
+                    </div>
+                    <div class="calibration-display">
+                        <div class="offset-item">
+                            <span class="offset-label">Az Offset</span>
+                            <span class="offset-value" id="az-offset">0.00°</span>
+                        </div>
+                        <div class="offset-item">
+                            <span class="offset-label">El Offset</span>
+                            <span class="offset-value" id="el-offset">0.00°</span>
+                        </div>
+                    </div>
+                    <div class="manual-calibration">
+                        <h3>Set Calibration Offsets</h3>
+                        <div class="calibration-inputs">
+                            <div class="input-field">
+                                <label>Az</label>
+                                <input type="number" id="cal-az" step="0.01" value="0">
+                            </div>
+                            <div class="input-field">
+                                <label>El</label>
+                                <input type="number" id="cal-el" step="0.01" value="0">
+                            </div>
+                            <button class="btn btn-secondary" onclick="setManualCalibration()">Apply</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Health Monitoring -->
+                <section class="card health-card">
+                    <div class="card-header">
+                        <h2><span class="icon">💚</span> System Health</h2>
+                    </div>
+                    <div class="health-grid">
+                        <div class="health-item">
+                            <span class="health-indicator healthy" id="health-gps"></span>
+                            <span>GPS</span>
+                        </div>
+                        <div class="health-item">
+                            <span class="health-indicator healthy" id="health-motors"></span>
+                            <span>Motors</span>
+                        </div>
+                        <div class="health-item">
+                            <span class="health-indicator healthy" id="health-wifi"></span>
+                            <span>WiFi</span>
+                        </div>
+                        <div class="health-item">
+                            <span class="health-indicator" id="health-sd"></span>
+                            <span>SD Card</span>
+                        </div>
+                    </div>
+                    <div class="health-stats">
+                        <div class="stat-row">
+                            <span class="stat-label">Heap (Free/Min)</span>
+                            <span class="stat-value" id="health-heap">---</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">PSRAM</span>
+                            <span class="stat-value" id="health-psram">---</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">WiFi RSSI</span>
+                            <span class="stat-value" id="health-rssi">---</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Uptime</span>
+                            <span class="stat-value" id="health-uptime">---</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- WiFi Settings -->
+                <section class="card wifi-card">
+                    <div class="card-header">
+                        <h2><span class="icon">📶</span> WiFi Settings</h2>
+                    </div>
+                    <div class="wifi-status">
+                        <div class="wifi-info-row">
+                            <span class="wifi-label">Status:</span>
+                            <span class="wifi-value" id="wifi-status">---</span>
+                        </div>
+                        <div class="wifi-info-row">
+                            <span class="wifi-label">SSID:</span>
+                            <span class="wifi-value" id="wifi-ssid">---</span>
+                        </div>
+                        <div class="wifi-info-row">
+                            <span class="wifi-label">IP:</span>
+                            <span class="wifi-value" id="wifi-ip">---</span>
+                        </div>
+                        <div class="wifi-info-row">
+                            <span class="wifi-label">Signal:</span>
+                            <span class="wifi-value" id="wifi-rssi">---</span>
+                        </div>
+                    </div>
+                    <div class="wifi-connect">
+                        <h3>Connect to Network</h3>
+                        <button class="btn btn-secondary btn-full" onclick="scanNetworks()">🔍 Scan Networks</button>
+                        <select id="network-select" class="select-styled">
+                            <option value="">Select Network...</option>
+                        </select>
+                        <input type="password" id="wifi-password" class="input-styled" placeholder="Password">
+                        <button class="btn btn-primary btn-full" onclick="connectWiFi()">Connect</button>
+                    </div>
+                </section>
+
+                <!-- System Info -->
+                <section class="card system-card">
+                    <div class="card-header">
+                        <h2><span class="icon">⚙️</span> System</h2>
+                    </div>
+                    <div class="system-info">
+                        <div class="system-row">
+                            <span>Version:</span>
+                            <span id="sys-version">---</span>
+                        </div>
+                        <div class="system-row">
+                            <span>Uptime:</span>
+                            <span id="sys-uptime">---</span>
+                        </div>
+                        <div class="system-row">
+                            <span>Free Heap:</span>
+                            <span id="sys-heap">---</span>
+                        </div>
+                        <div class="system-row">
+                            <span>rotctld Clients:</span>
+                            <span id="sys-rotctld">0</span>
+                        </div>
+                    </div>
+                    <div class="system-actions">
+                        <button class="btn btn-secondary" onclick="rebootDevice()">🔄 Reboot</button>
+                        <button class="btn btn-danger" onclick="factoryReset()">⚠️ Factory Reset</button>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <span class="footer-brand">Az/El Satellite Tracker</span>
+                <span class="footer-divider">•</span>
+                <span>rotctld: <strong id="footer-rotctld">4533</strong></span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
