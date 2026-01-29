@@ -1,6 +1,6 @@
 # Az/El Satellite Tracker
 
-An ESP32-S3-CAM based satellite antenna tracker with automatic tracking, GPredict compatibility, and web-based control interface.
+An ESP32-S3 based satellite antenna tracker with automatic tracking, GPredict compatibility, and web-based control interface.
 
 ![Satellite Tracker](docs/images/tracker-banner.png)
 
@@ -8,10 +8,10 @@ An ESP32-S3-CAM based satellite antenna tracker with automatic tracking, GPredic
 
 - **Automatic Satellite Tracking**: On-device SGP4/SDP4 orbit propagation for autonomous tracking
 - **GPredict Compatible**: Full rotctld protocol support on TCP port 4533
-- **Web Interface**: Modern responsive UI for control, monitoring, and configuration
-- **TLE Management**: Automatic TLE updates from Celestrak when connected to WiFi
+- **Web Interface**
+- **TLE Management**
 - **GPS Integration**: Automatic position and time from GPS module
-- **Sensorless Homing**: TMC2209 StallGuard for reliable homing without limit switches
+- **Sensorless Homing**: TMC2209 StallGuard for homing without limit switches
 - **Zenith Pass Handling**: Automatic flip management for overhead satellite passes
 
 ## Hardware Requirements
@@ -20,7 +20,7 @@ An ESP32-S3-CAM based satellite antenna tracker with automatic tracking, GPredic
 
 | Component | Specification | Notes |
 |-----------|--------------|-------|
-| MCU | ESP32-S3-CAM | With OV2640 camera |
+| MCU | ESP32-S3 
 | Az Motor | NEMA 17 5.18:1 geared stepper | 0.35° resolution |
 | El Motor | NEMA 17 5.18:1 geared stepper | 0.35° resolution |
 | Drivers | TMC2209 × 2 | UART mode, StallGuard |
@@ -30,7 +30,7 @@ An ESP32-S3-CAM based satellite antenna tracker with automatic tracking, GPredic
 ### Pin Connections
 
 ```
-ESP32-S3-CAM Pin Mapping
+ESP32-S3 Pin Mapping
 ========================
 
 TMC2209 Azimuth:
@@ -59,43 +59,7 @@ TMC2209 UART Addressing:
 
 ### Wiring Diagram
 
-```
-                    ┌─────────────────┐
-                    │   ESP32-S3-CAM  │
-                    │                 │
-    ┌───────────────┤ GPIO38    GPIO1 ├───────────┐
-    │               │ GPIO39   GPIO43 ├─────┬─────┼───────┐
-    │               │ GPIO40   GPIO44 ├───┬─┼─────┼───────┤
-    │               │                 │   │ │     │       │
-    │               │ GPIO41   GPIO14 ├───┼─┼─────┼───┐   │
-    │               │ GPIO42   GPIO21 ├───┼─┼─────┼───┤   │
-    │               │ GPIO2           │   │ │     │   │   │
-    │               └─────────────────┘   │ │     │   │   │
-    │                                     │ │     │   │   │
-    │    ┌──────────────┐                 │ │     │   │   │
-    │    │  TMC2209 AZ  │                 │ │     │   │   │
-    ├────┤ STEP     EN  ├─────────────────┼─┼─────┘   │   │
-    ├────┤ DIR      TX  ├─────────────────┘ │         │   │
-    ├────┤ DIAG     RX  ├───────────────────┘         │   │
-    │    │ MS1=GND      │                             │   │
-    │    │ MS2=GND      │                             │   │
-    │    └──────────────┘                             │   │
-    │                                                 │   │
-    │    ┌──────────────┐                             │   │
-    │    │  TMC2209 EL  │                             │   │
-    ├────┤ STEP     EN  ├─────────────────────────────┘   │
-    ├────┤ DIR      TX  ├─────────────────────────────────┤
-    ├────┤ DIAG     RX  ├─────────────────────────────────┘
-    │    │ MS1=3.3V     │
-    │    │ MS2=GND      │
-    │    └──────────────┘
-    │
-    │    ┌──────────────┐
-    │    │     GPS      │
-    │    │ TX      VCC  ├─── 3.3V
-    │    │ RX      GND  ├─── GND
-    │    └──────────────┘
-```
+
 
 ## Software Setup
 
@@ -108,7 +72,7 @@ TMC2209 UART Addressing:
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/satellite-tracker.git
+git clone 
 cd satellite-tracker
 ```
 
@@ -267,7 +231,7 @@ satellite-tracker/
 │   ├── rotctld_server.*      # Hamlib protocol server
 │   ├── wifi_manager.*        # WiFi connectivity
 │   ├── web_server.*          # HTTP server and API
-│   ├── camera_align.*        # Camera-based alignment
+│   ├── camera_align.*        # Camera-based solar/moon alignment - currently inop and not used
 │   └── nvs_storage.*         # Persistent storage
 ├── data/
 │   ├── index.html            # Web UI
